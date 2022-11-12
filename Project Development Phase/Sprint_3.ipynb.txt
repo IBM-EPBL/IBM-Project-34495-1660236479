@@ -1,0 +1,83 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "J_3LAcIqpojJ"
+      },
+      "outputs": [],
+      "source": [
+        "from tensorflow.keras.models import load_model\n",
+        "from keras.preprocessing import image\n",
+        "from flask import Flask,render_template,request\n",
+        "import os\n",
+        "import numpy as np\n",
+        "from tensorflow.keras.models import load_model\n",
+        "from tensorflow.keras.preprocessing import image\n",
+        "import requests\n",
+        "from google.colab import drive\n",
+        "drive.mount('/content/drive')\n",
+        "Mounted at /content/drive\n",
+        "app= Flask(__name__,template_folder=\"templates\")\n",
+        "from tensorflow import keras\n",
+        "model = keras.models.load_model('/content/drive/MyDrive/Colab Notebooks/Dataset-20221108T081455Z-001/Dataset/nutrition.h5')\n",
+        "print(\"Loaded model from disk\")\n",
+        "Loaded model from disk\n",
+        "@app.route('/')\n",
+        "def home():\n",
+        "    return render_template('homepage.html')\n",
+        "@app.route('/image1',methods=['GET','POST'])\n",
+        "def image1():\n",
+        "    return render_template(\"image.html\")\n",
+        "@app.route('/predict',methods=['GET','POST'])\n",
+        "def launch():\n",
+        "    if request.method=='POST':\n",
+        "        f=request.files['file']\n",
+        "        basepath=os.path.dirname('__file__')\n",
+        "        filepath=os.path.join(basepath,\"uploads\",f.filename)\n",
+        "        f.save(filepath)\n",
+        "        \n",
+        "        img=image.load_img(filepath,target_size=(64,64))\n",
+        "        x=image.img_to_array(img)\n",
+        "        x=np.expand_dims(x,axis=0)\n",
+        "        \n",
+        "        pred=np.argmax(model.predict(x), axis=1)\n",
+        "        print(\"prediction\",pred)\n",
+        "        index=['APPLES','BANANA','ORANGE','PINEAPPLE','WATERMELON']\n",
+        "        result=str(index[pred[0]])\n",
+        "        x=result\n",
+        "        print(x)\n",
+        "        result=nutrition(result)\n",
+        "        print(result)\n",
+        "        return render_template(\"0.html\",showcase=(result),showcase1=(x))\n",
+        "def nutrition(index):\n",
+        "    url = \"https://calorieninjas.p.rapidapi.com/v1/nutrition\"\n",
+        "    querystring = {\"query\":index}\n",
+        "    headers = {\n",
+        "        'X-RapidAPI-Key': 'daaf576556msh5fcbc747e5cb27cp14bd10jsn07d05ab509ae',\n",
+        "    'X-RapidAPI-Host': 'calorieninjas.p.rapidapi.com'\n",
+        "    }\n",
+        "    response = requests.request(\"GET\",url,headers=headers, params=querystring)\n",
+        "    print(response.text)\n",
+        "    return response.json()['items']\n",
+        "if __name__ == \"__main__\":\n",
+        "    app.run(debug=False)"
+      ]
+    }
+  ]
+}
